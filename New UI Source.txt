@@ -17,13 +17,14 @@ function ModernUI.new(title)
     ui.gui = Instance.new("ScreenGui")
     ui.gui.Name = title or "ModernUI"
     ui.gui.ResetOnSpawn = false
+    ui.gui.IgnoreGuiInset = true
     ui.gui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
     -- Main container frame
     ui.mainFrame = Instance.new("Frame")
     ui.mainFrame.Size = UDim2.new(0, DEFAULT_WIDTH, 0, DEFAULT_HEIGHT)
-    ui.mainFrame.Position = UDim2.new(0.5, -DEFAULT_WIDTH/2, 0.5, -DEFAULT_HEIGHT/2)
     ui.mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    ui.mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     ui.mainFrame.BackgroundColor3 = PRIMARY_COLOR
     ui.mainFrame.BorderSizePixel = 0
     ui.mainFrame.Parent = ui.gui
