@@ -1,0 +1,480 @@
+local ModernUI = {}
+ModernUI.__index = ModernUI
+
+-- Constants
+local DEFAULT_WIDTH = 500
+local DEFAULT_HEIGHT = 385
+local PRIMARY_COLOR = Color3.fromRGB(30, 30, 30)
+local SECONDARY_COLOR = Color3.fromRGB(40, 40, 40)
+local ACCENT_COLOR = Color3.fromRGB(0, 120, 215)
+local TEXT_COLOR = Color3.fromRGB(255, 255, 255)
+local FONT = Enum.Font.Gotham
+
+function ModernUI.new(title)
+    local ui = {}
+
+    -- Create main GUI container
+    ui.gui = Instance.new("ScreenGui")
+    ui.gui.Name = title or "ModernUI"
+    ui.gui.ResetOnSpawn = false
+    ui.gui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    -- Main container frame
+    ui.mainFrame = Instance.new("Frame")
+    ui.mainFrame.Size = UDim2.new(0, DEFAULT_WIDTH, 0, DEFAULT_HEIGHT)
+    ui.mainFrame.Position = UDim2.new(0.5, -DEFAULT_WIDTH/2, 0.5, -DEFAULT_HEIGHT/2)
+    ui.mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    ui.mainFrame.BackgroundColor3 = PRIMARY_COLOR
+    ui.mainFrame.BorderSizePixel = 0
+    ui.mainFrame.Parent = ui.gui
+
+    -- Title bar
+    ui.titleBar = Instance.new("Frame")
+    ui.titleBar.Size = UDim2.new(1, 0, 0, 30)
+    ui.titleBar.BackgroundColor3 = SECONDARY_COLOR
+    ui.titleBar.BorderSizePixel = 0
+    ui.titleBar.Parent = ui.mainFrame
+
+    ui.titleLabel = Instance.new("TextLabel")
+    ui.titleLabel.Size = UDim2.new(1, 0, 1, 0)
+    ui.titleLabel.BackgroundTransparency = 1
+    ui.titleLabel.Text = title or "Modern UI"
+    ui.titleLabel.TextColor3 = TEXT_COLOR
+    ui.titleLabel.TextSize = 16
+    ui.titleLabel.Font = Enum.Font.GothamBold
+    ui.titleLabel.Parent = ui.titleBar
+
+    -- Content container with scrolling
+    ui.contentFrame = Instance.new("ScrollingFrame")
+    ui.contentFrame.Size = UDim2.new(1, 0, 1, -30)
+    ui.contentFrame.Position = UDim2.new(0, 0, 0, 30)
+    ui.contentFrame.BackgroundTransparency = 1
+    ui.contentFrame.ScrollBarThickness = 5
+    ui.contentFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+    ui.contentFrame.Parent = ui.mainFrame
+
+    -- Layout manager
+    ui.layout = Instance.new("UIListLayout")
+    ui.layout.Padding = UDim.new(0, 8)
+    ui.layout.Parent = ui.contentFrame
+
+    -- Padding
+    ui.padding = Instance.new("UIPadding")
+    ui.padding.PaddingLeft = UDim.new(0, 10)
+    ui.padding.PaddingRight = UDim.new(0, 10)
+    ui.padding.PaddingTop = UDim.new(0, 5)
+    ui.padding.Parent = ui.contentFrame
+
+    -- Elements and connections tracking
+    ui.elements = {}
+    ui.connections = {}
+
+    function ui.Button(text, callback)
+        local container = Instance.new("Frame")
+        container.Size = UDim2.new(1, 0, 0, 40)
+        container.BackgroundTransparency = 1
+        container.Parent = ui.contentFrame
+
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1, 0, 1, 0)
+        button.BackgroundColor3 = SECONDARY_COLOR
+        button.BorderSizePixel = 0
+        button.Text = text
+        button.TextColor3 = TEXT_COLOR
+        button.TextSize = 14
+        button.Font = FONT
+        button.Parent = container
+
+        table.insert(ui.connections, button.MouseButton1Click:Connect(function()
+            if callback then
+                local success, err = pcall(callback)
+                if not success then
+                    warn("Button callback error: " .. err)
+                end
+            end
+        end))
+
+        local buttonObj = {
+            SetText = function(newText)
+                button.Text = newText
+            end,
+            GetText = function()
+                return button.Text
+            end,
+            Destroy = function()
+                container:Destroy()
+            end
+        }
+
+        table.insert(ui.elements, buttonObj)
+        return buttonObj
+    end
+
+    function ui.Toggle(text, defaultState, callback)
+        local container = Instance.new("Frame")
+        container.Size = UDim2.new(1, 0, 0, 40)
+        container.BackgroundTransparency = 1
+        container.Parent = ui.contentFrame
+
+        local toggleButton = Instance.new("TextButton")
+        toggleButton.Size = UDim2.new(0, 40, 1, 0)
+        toggleButton.Position = UDim2.new(0, 0, 0, 0)
+        toggleButton.BackgroundColor3 = defaultState and ACCENT_COLOR or Color3.fromRGB(170, 0, 0)
+        toggleButton.BorderSizePixel = 0
+        toggleButton.Text = ""
+        toggleButton.Parent = container
+
+        local toggleLabel = Instance.new("TextLabel")
+        toggleLabel.Size = UDim2.new(1, -50, 1, 0)
+        toggleLabel.Position = UDim2.new(0, 50, 0, 0)
+        toggleLabel.BackgroundTransparency = 1
+        toggleLabel.Text = text
+        toggleLabel.TextColor3 = TEXT_COLOR
+        toggleLabel.TextSize = 14
+        toggleLabel.Font = FONT
+        toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        toggleLabel.Parent = container
+
+        local state = defaultState or false
+
+        table.insert(ui.connections, toggleButton.MouseButton1Click:Connect(function()
+            state = not state
+            toggleButton.BackgroundColor3 = state and ACCENT_COLOR or Color3.fromRGB(170, 0, 0)
+            if callback then
+                local success, err = pcall(function() callback(state) end)
+                if not success then
+                    warn("Toggle callback error: " .. err)
+                end
+            end
+        end))
+
+        local toggleObj = {
+            SetState = function(newState)
+                state = newState
+                toggleButton.BackgroundColor3 = state and ACCENT_COLOR or Color3.fromRGB(170, 0, 0)
+                if callback then
+                    local success, err = pcall(function() callback(state) end)
+                    if not success then
+                        warn("Toggle SetState error: " .. err)
+                    end
+                end
+            end,
+            GetState = function()
+                return state
+            end,
+            Destroy = function()
+                container:Destroy()
+            end
+        }
+
+        table.insert(ui.elements, toggleObj)
+        return toggleObj
+    end
+
+    function ui.Slider(text, min, max, default, callback)
+        local container = Instance.new("Frame")
+        container.Size = UDim2.new(1, 0, 0, 60)
+        container.BackgroundTransparency = 1
+        container.Parent = ui.contentFrame
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 0, 20)
+        label.BackgroundTransparency = 1
+        label.Text = text
+        label.TextColor3 = TEXT_COLOR
+        label.TextSize = 14
+        label.Font = FONT
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = container
+
+        local sliderTrack = Instance.new("Frame")
+        sliderTrack.Size = UDim2.new(1, 0, 0, 8)
+        sliderTrack.Position = UDim2.new(0, 0, 0, 30)
+        sliderTrack.BackgroundColor3 = SECONDARY_COLOR
+        sliderTrack.BorderSizePixel = 0
+        sliderTrack.Parent = container
+
+        local sliderThumb = Instance.new("Frame")
+        sliderThumb.Size = UDim2.new(0, 12, 1, 0)
+        sliderThumb.Position = UDim2.new((default - min) / (max - min), 0, 0, 0)
+        sliderThumb.BackgroundColor3 = ACCENT_COLOR
+        sliderThumb.BorderSizePixel = 0
+        sliderThumb.Parent = sliderTrack
+
+        local valueLabel = Instance.new("TextLabel")
+        valueLabel.Size = UDim2.new(1, 0, 0, 20)
+        valueLabel.Position = UDim2.new(0, 0, 0, 40)
+        valueLabel.BackgroundTransparency = 1
+        valueLabel.Text = tostring(default)
+        valueLabel.TextColor3 = TEXT_COLOR
+        valueLabel.TextSize = 12
+        valueLabel.Font = FONT
+        valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+        valueLabel.Parent = container
+
+        local dragging = false
+        local connection = nil
+
+        table.insert(ui.connections, sliderThumb.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                connection = game:GetService("UserInputService").InputChanged:Connect(function(input)
+                    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                        local mousePos = input.Position
+                        local relativePos = mousePos.X - sliderTrack.AbsolutePosition.X
+                        local percent = math.clamp(relativePos / sliderTrack.AbsoluteSize.X, 0, 1)
+                        local value = min + (max - min) * percent
+
+                        sliderThumb.Position = UDim2.new(percent, 0, 0, 0)
+                        valueLabel.Text = tostring(math.floor(value + 0.5))
+                        if callback then
+                            local success, err = pcall(function() callback(value) end)
+                            if not success then
+                                warn("Slider callback error: " .. err)
+                            end
+                        end
+                    end
+                end)
+            end
+        end))
+
+        table.insert(ui.connections, sliderThumb.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+                if connection then
+                    connection:Disconnect()
+                    connection = nil
+                end
+            end
+        end))
+
+        local sliderObj = {
+            SetValue = function(newValue)
+                local percent = (newValue - min) / (max - min)
+                sliderThumb.Position = UDim2.new(percent, 0, 0, 0)
+                valueLabel.Text = tostring(math.floor(newValue + 0.5))
+                if callback then
+                    local success, err = pcall(function() callback(newValue) end)
+                    if not success then
+                        warn("Slider SetValue error: " .. err)
+                    end
+                end
+            end,
+            GetValue = function()
+                local percent = sliderThumb.Position.X.Scale
+                return min + (max - min) * percent
+            end,
+            Destroy = function()
+                container:Destroy()
+                if connection then
+                    connection:Disconnect()
+                end
+            end
+        }
+
+        table.insert(ui.elements, sliderObj)
+        return sliderObj
+    end
+
+    function ui.TextBox(text, placeholder, callback)
+        local container = Instance.new("Frame")
+        container.Size = UDim2.new(1, 0, 0, 40)
+        container.BackgroundTransparency = 1
+        container.Parent = ui.contentFrame
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 0.5, 0)
+        label.BackgroundTransparency = 1
+        label.Text = text
+        label.TextColor3 = TEXT_COLOR
+        label.TextSize = 14
+        label.Font = FONT
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = container
+
+        local textBox = Instance.new("TextBox")
+        textBox.Size = UDim2.new(1, 0, 0.5, 0)
+        textBox.Position = UDim2.new(0, 0, 0.5, 0)
+        textBox.BackgroundColor3 = SECONDARY_COLOR
+        textBox.BorderSizePixel = 0
+        textBox.TextColor3 = TEXT_COLOR
+        textBox.TextSize = 14
+        textBox.Font = FONT
+        textBox.PlaceholderText = placeholder or ""
+        textBox.Parent = container
+
+        table.insert(ui.connections, textBox.FocusLost:Connect(function(enterPressed)
+            if enterPressed and callback then
+                local success, err = pcall(function() callback(textBox.Text) end)
+                if not success then
+                    warn("TextBox callback error: " .. err)
+                end
+            end
+        end))
+
+        local textBoxObj = {
+            SetText = function(newText)
+                textBox.Text = newText
+            end,
+            GetText = function()
+                return textBox.Text
+            end,
+            Destroy = function()
+                container:Destroy()
+            end
+        }
+
+        table.insert(ui.elements, textBoxObj)
+        return textBoxObj
+    end
+
+    function ui.Label(text)
+        local container = Instance.new("Frame")
+        container.Size = UDim2.new(1, 0, 0, 40)
+        container.BackgroundTransparency = 1
+        container.Parent = ui.contentFrame
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = text
+        label.TextColor3 = TEXT_COLOR
+        label.TextSize = 14
+        label.Font = FONT
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = container
+
+        local labelObj = {
+            SetText = function(newText)
+                label.Text = newText
+            end,
+            GetText = function()
+                return label.Text
+            end,
+            Destroy = function()
+                container:Destroy()
+            end
+        }
+
+        table.insert(ui.elements, labelObj)
+        return labelObj
+    end
+
+    function ui.Dropdown(text, options, callback)
+        local container = Instance.new("Frame")
+        container.Size = UDim2.new(1, 0, 0, 40)
+        container.BackgroundTransparency = 1
+        container.Parent = ui.contentFrame
+
+        local dropdownButton = Instance.new("TextButton")
+        dropdownButton.Size = UDim2.new(1, 0, 1, 0)
+        dropdownButton.BackgroundColor3 = SECONDARY_COLOR
+        dropdownButton.BorderSizePixel = 0
+        dropdownButton.Text = text
+        dropdownButton.TextColor3 = TEXT_COLOR
+        dropdownButton.TextSize = 14
+        dropdownButton.Font = FONT
+        dropdownButton.TextXAlignment = Enum.TextXAlignment.Left
+        dropdownButton.Parent = container
+
+        local dropdownArrow = Instance.new("TextLabel")
+        dropdownArrow.Size = UDim2.new(0, 20, 1, 0)
+        dropdownArrow.Position = UDim2.new(1, -20, 0, 0)
+        dropdownArrow.BackgroundTransparency = 1
+        dropdownArrow.Text = "▼"
+        dropdownArrow.TextColor3 = TEXT_COLOR
+        dropdownArrow.TextSize = 14
+        dropdownArrow.Font = FONT
+        dropdownArrow.Parent = dropdownButton
+
+        local dropdownList = Instance.new("Frame")
+        dropdownList.Size = UDim2.new(1, 0, 0, 0)
+        dropdownList.Position = UDim2.new(0, 0, 1, 0)
+        dropdownList.BackgroundColor3 = PRIMARY_COLOR
+        dropdownList.BorderSizePixel = 0
+        dropdownList.Visible = false
+        dropdownList.Parent = container
+
+        local dropdownLayout = Instance.new("UIListLayout")
+        dropdownLayout.Parent = dropdownList
+
+        local selectedOption = nil
+
+        for _, option in ipairs(options) do
+            local optionButton = Instance.new("TextButton")
+            optionButton.Size = UDim2.new(1, 0, 0, 30)
+            optionButton.BackgroundColor3 = SECONDARY_COLOR
+            optionButton.BorderSizePixel = 0
+            optionButton.Text = option
+            optionButton.TextColor3 = TEXT_COLOR
+            optionButton.TextSize = 14
+            optionButton.Font = FONT
+            optionButton.Parent = dropdownList
+
+            table.insert(ui.connections, optionButton.MouseButton1Click:Connect(function()
+                dropdownButton.Text = option
+                selectedOption = option
+                dropdownList.Visible = false
+                dropdownArrow.Text = "▼"
+                if callback then
+                    local success, err = pcall(function() callback(option) end)
+                    if not success then
+                        warn("Dropdown callback error: " .. err)
+                    end
+                end
+            end))
+        end
+
+        table.insert(ui.connections, dropdownButton.MouseButton1Click:Connect(function()
+            dropdownList.Visible = not dropdownList.Visible
+            dropdownArrow.Text = dropdownList.Visible and "▲" or "▼"
+        end))
+
+        local dropdownObj = {
+            SetOption = function(option)
+                dropdownButton.Text = option
+                selectedOption = option
+                if callback then
+                    local success, err = pcall(function() callback(option) end)
+                    if not success then
+                        warn("Dropdown SetOption error: " .. err)
+                    end
+                end
+            end,
+            GetOption = function()
+                return selectedOption
+            end,
+            Destroy = function()
+                container:Destroy()
+            end
+        }
+
+        table.insert(ui.elements, dropdownObj)
+        return dropdownObj
+    end
+
+    function ui.Destroy()
+        for _, element in ipairs(ui.elements) do
+            if element.Destroy then
+                element:Destroy()
+            end
+        end
+
+        for _, connection in ipairs(ui.connections) do
+            if connection.Connected then
+                connection:Disconnect()
+            end
+        end
+
+        if ui.gui then
+            ui.gui:Destroy()
+        end
+
+        table.clear(ui.elements)
+        table.clear(ui.connections)
+    end
+
+    return ui
+end
+
+return ModernUI
